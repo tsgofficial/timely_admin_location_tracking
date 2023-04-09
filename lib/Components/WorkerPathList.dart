@@ -91,7 +91,7 @@ class _WorkerPathListState extends State<WorkerPathList> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8.0, vertical: 15),
                       child: Text(
-                        '${widget.totalDistance.toString().substring(0, 7)} метр',
+                        '${widget.totalDistance.toString().substring(0, 5)} км',
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,

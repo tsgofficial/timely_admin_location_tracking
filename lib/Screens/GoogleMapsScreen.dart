@@ -197,7 +197,7 @@ class _DetailedMapScreenState extends State<DetailedMapScreen> {
                             ),
                           ),
                           Text(
-                            '${Calculating().calculateDistance().toString().substring(0, 7)} м',
+                            '${Calculating().calculateDistance().toString().substring(0, 5)} км',
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 18,
