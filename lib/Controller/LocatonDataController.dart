@@ -17,7 +17,6 @@ class LocationDataController extends GetxController {
     locDataModel.value = locationDataModel;
     locData.value = locationDataModel.data!;
     isLoading.value = false;
-    print(locData.length);
-    print(locData.last.latitude);
+    print("location data length: ${locData.length}");
   }
 }

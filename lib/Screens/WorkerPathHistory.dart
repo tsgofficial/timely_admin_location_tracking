@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:intl/intl.dart';
 
 import '../Components/Calculate.dart';
 import '../Components/WorkerPathList.dart';
@@ -26,10 +25,9 @@ class _WorkerPathHistoryState extends State<WorkerPathHistory> {
   void initState() {
     super.initState();
     controller.getLocData(
-      64706,
-      '1',
-      int.parse(widget.workerId.substring(8, 9)),
-      DateFormat('yyyy-MM-dd').parse(widget.date.toString()),
+      64706, '1', 51955, DateTime.now(),
+      // int.parse(widget.workerId.substring(8, 9)),
+      // DateFormat('yyyy-MM-dd').parse(widget.date.toString()),
     );
   }
 
@@ -79,7 +77,9 @@ class _WorkerPathHistoryState extends State<WorkerPathHistory> {
                           itemBuilder: (context, index) {
                             return WorkerPathList(
                               day: Calculating().calculateDay(),
-                              date: controller.locData.last.date!,
+                              date: controller.locData.isNotEmpty
+                                  ? controller.locData.last.date!
+                                  : DateTime.now(),
                               difference: Calculating().calculateTime(),
                               totalDistance: Calculating().calculateDistance(),
                             );

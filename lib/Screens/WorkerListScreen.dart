@@ -1,27 +1,87 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:timely_admin_location/Components/CustomColors%20(2).dart';
 import 'package:timely_admin_location/Controller/LocatonDataController.dart';
-
+import 'package:socket_io_client/socket_io_client.dart' as IO;
+import 'package:timely_admin_location/Controller/SocketStreamController.dart';
+import 'package:uuid/uuid.dart';
 import 'WorkerPathHistory.dart';
 
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+class WorkerListScreen extends StatefulWidget {
+  const WorkerListScreen({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  State<WorkerListScreen> createState() => _WorkerListScreenState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _WorkerListScreenState extends State<WorkerListScreen> {
   final locDataController = Get.put(LocationDataController());
+  final socketController = Get.put(SocketStreamController());
+
+  // IO.Socket socket = IO.io('https://api.timely.mn/', <String, dynamic>{
+  //   "transports": ["websocket"],
+  // });
+
+  IO.Socket socket = IO.io('http://16.162.14.221:4000/', <String, dynamic>{
+    'transports': ['websocket'],
+  });
+
+  var uniqueId = const Uuid().v4();
+
+  var dataList = [];
 
   @override
   void initState() {
     super.initState();
+    socket.connect();
+    if (socket.connected) {
+      print('socket connected!');
+    } else {
+      print('couldnt connect');
+    }
+    socket.onConnect((data) async {
+      print('socket connected !!!');
+    });
+    receivedData(51955);
   }
 
-  late DateTime _selectedDate = DateTime.now();
+  void receivedData(int desiredUserId) async {
+    var request = {
+      "userId": 1782,
+      "desiredUser": desiredUserId,
+    };
+    socket.emit("auth", request);
+    socket.on('auth_result', (data) {
+      {
+        print("nogoo data getsen ym ni: $data");
+        // String jsonString = String.fromCharCodes(data);
+        // var receivedData = json.decode(jsonString);
+        if (data['success']) {
+          print('success');
+        } else {
+          print('fail');
+        }
+      }
+    });
+    // socket.stream/
+    socket.on(
+      'location',
+      (data) => {
+        socketController.locDataList.add(
+          LatLng(data["latitude"], data["longitude"]),
+        ),
+        print("latitude: ${data["latitude"]}"),
+        print("longitude: ${data["longitude"]}"),
+        dataList.add(data),
+        print("dataList length: ${dataList.length}"),
+        print("data ni: $data"),
+      },
+    );
+  }
+
+  DateTime _selectedDate = DateTime.now();
 
   ThemeData pickerTheme = ThemeData(
     primaryColor: Colors.red, // set accent color
@@ -111,6 +171,7 @@ class _HomePageState extends State<HomePage> {
         itemBuilder: (context, index) {
           return InkWell(
             onTap: () {
+              receivedData(51955);
               Get.to(
                 () => WorkerPathHistory(
                   date: _selectedDate,

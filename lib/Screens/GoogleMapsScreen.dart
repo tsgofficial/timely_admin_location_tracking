@@ -7,7 +7,7 @@ import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:timely_admin_location/Components/Calculate.dart';
 import 'package:timely_admin_location/Controller/GoogleMapController.dart';
-
+import 'package:socket_io_client/socket_io_client.dart' as IO;
 import '../Components/CustomColors (2).dart';
 import '../Controller/LocatonDataController.dart';
 // import 'package:geoloca';
@@ -30,13 +30,91 @@ class DetailedMapScreen extends StatefulWidget {
 class _DetailedMapScreenState extends State<DetailedMapScreen> {
   final controller = Get.put(LocationDataController());
   final googleMapsController = Get.put(GoogleMapsController());
+
+  List<LatLng> locDataList = [];
   @override
   void initState() {
     super.initState();
     // polylinePoints = PolylinePoints();
     reqPermission();
     getLocs();
+    socket.connect();
+    if (socket.connected) {
+      print('socket connected!');
+    } else {
+      print('couldnt connect');
+    }
+    socket.onConnect((data) async {
+      print('socket connected !!!');
+    });
+    receivedData(51955);
   }
+
+  void receivedData(int desiredUserId) async {
+    var request = {
+      "userId": 1782,
+      "desiredUser": desiredUserId,
+    };
+    socket.emit("auth", request);
+    socket.on('auth_result', (data) {
+      {
+        print("nogoo data getsen ym ni: $data");
+        // String jsonString = String.fromCharCodes(data);
+        // var receivedData = json.decode(jsonString);
+        if (data['success']) {
+          print('success');
+        } else {
+          print('fail');
+        }
+      }
+    });
+    // socket.stream/
+    socket.on(
+      'location',
+      (data) {
+        {
+          // locDataList.add(data);
+          print("dataList length: ${locDataList.length}");
+          print("data ni: $data");
+          LatLng location = LatLng(data["latitude"], data["longitude"]);
+          updateMap(location);
+        }
+      },
+      // updateMap);
+    );
+  }
+
+  void updateMap(LatLng location) async {
+    setState(() {
+      endMarker1 = Marker(
+        markerId: const MarkerId('start_marker'),
+        position: location,
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+      );
+      polylineCoordinates.add(location);
+      _polylines.add(
+        Polyline(
+          color: CustomColors.MAIN_BLUE,
+          width: 7,
+          polylineId: const PolylineId('polyline_id'),
+          points: polylineCoordinates,
+        ),
+      );
+    });
+    final GoogleMapController controller = await _controller.future;
+    controller.animateCamera(
+      CameraUpdate.newCameraPosition(
+        CameraPosition(
+          target: location,
+          zoom: 5,
+        ),
+      ),
+    );
+  }
+
+  IO.Socket socket = IO.io('http://16.162.14.221:4000/', <String, dynamic>{
+    'transports': ['websocket'],
+  });
 
   List<LatLng> polylineCoordinates = [];
   bool isLoading = false;
@@ -60,7 +138,7 @@ class _DetailedMapScreenState extends State<DetailedMapScreen> {
       double.parse(controller.locData.first.latitude!),
       double.parse(controller.locData.first.longitude!),
     ),
-    zoom: 16,
+    zoom: 5,
   );
 
   late Marker startMarker1 = Marker(
@@ -154,6 +232,14 @@ class _DetailedMapScreenState extends State<DetailedMapScreen> {
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(
+          leading: IconButton(
+            onPressed: () {
+              Get.back();
+              socket.disconnect();
+              polylineCoordinates.clear();
+            },
+            icon: const Icon(Icons.arrow_back_ios),
+          ),
           shadowColor: Colors.grey,
           elevation: 3, // set the elevation to create a shadow effect
           shape: const RoundedRectangleBorder(
